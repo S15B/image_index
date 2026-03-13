@@ -179,11 +179,7 @@ class HtmlParser:
         cleaned = " ".join(text.split()).strip()
         if cleaned:
             self.elements.append({"type": "text", "content": cleaned})
-
-
-# ============================================================
-#                  СОХРАНЕНИЕ КАРТИНОК
-# ============================================================
+            
 
 def save_image(src: str, output_dir: str, counter: int, base_path: str) -> dict:
     """
@@ -194,7 +190,7 @@ def save_image(src: str, output_dir: str, counter: int, base_path: str) -> dict:
     - URL: https://example.com/photo.png
     - Data URL: data:image/png;base64,...
     
-    Возвращает словарь с информацией или None при ошибке.
+    Возвращает словарь с информацией или None при ошибке
     """
     
     # ===== ТИП 1: Data URL =====
