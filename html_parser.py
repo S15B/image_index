@@ -113,23 +113,53 @@ class HtmlParser:
             "attributes": attributes.strip(),
         }
     
+
     def _get_attribute(self, attrs_str: str, attr_name: str) -> str:
-        """Извлекает значение атрибута."""
+        """Извлекает значение атрибута"""
         if not attrs_str:
             return ""
         
         attr_lower = attr_name.lower()
         attrs_lower = attrs_str.lower()
         
-        # Ищем атрибут
-        pos = attrs_lower.find(attr_lower + "=")
-        if pos == -1:
+        # Ищем имя атрибута
+        pos = 0
+        while True:
+            pos = attrs_lower.find(attr_lower, pos)
+            if pos == -1:
+                return ""
+            
+            # Проверяем, что это начало слова (не часть другого атрибута)
+            if pos > 0 and attrs_lower[pos - 1].isalnum():
+                pos += 1
+                continue
+            
+            # Проверяем, что после имени идёт = или пробел
+            end_of_name = pos + len(attr_lower)
+            if end_of_name < len(attrs_str):
+                next_char = attrs_str[end_of_name]
+                if next_char.isalnum() or next_char in "-_":
+                    # Это часть другого атрибута (например, data-src vs src)
+                    pos += 1
+                    continue
+            
+            break
+        
+        # Пропускаем имя атрибута
+        pos += len(attr_lower)
+        
+        # Пропускаем пробелы ПЕРЕД знаком =
+        while pos < len(attrs_str) and attrs_str[pos] in " \t\n\r":
+            pos += 1
+        
+        # Проверяем наличие знака =
+        if pos >= len(attrs_str) or attrs_str[pos] != "=":
             return ""
         
-        pos = attrs_str.find("=", pos) + 1
+        pos += 1  # пропускаем =
         
-        # Пропускаем пробелы
-        while pos < len(attrs_str) and attrs_str[pos] == " ":
+        # Пропускаем пробелы ПОСЛЕ знака =
+        while pos < len(attrs_str) and attrs_str[pos] in " \t\n\r":
             pos += 1
         
         if pos >= len(attrs_str):
@@ -146,11 +176,13 @@ class HtmlParser:
                 pos += 1
             return value
         else:
+            # Без кавычек — до пробела или конца
             value = ""
-            while pos < len(attrs_str) and attrs_str[pos] not in (" ", ">", "\t", "\n"):
+            while pos < len(attrs_str) and attrs_str[pos] not in (" ", ">", "\t", "\n", "\r", "/"):
                 value += attrs_str[pos]
                 pos += 1
             return value
+
     
     def _skip_comment(self):
         """Пропускает <!-- ... -->"""
