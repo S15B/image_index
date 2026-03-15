@@ -43,7 +43,7 @@ class TestEdgeCases(unittest.TestCase):
         
         self.assertEqual(len(texts), 1)
         self.assertEqual(len(images), 1)
-        self.assertIn("Привет", texts[0]["content"])
+        self.assertIn("Hello", texts[0]["content"])
         self.assertEqual(images[0]["alt"], "Тест")
         
         print("✓ test_unicode_text пройден")

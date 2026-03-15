@@ -106,3 +106,11 @@ class TestHtmlParser(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+
+   #МГУ имени М.В. Ломоносова.html   
+   #python html_parser.py "sample_files\МГУ имени М.В. Ломоносова2.html" output
+   #python html_parser.py "sample_files\Главная _ Санкт-Петербургский государственный университет.html" output
+   #python html_parser.py "sample_files\Календарь событий _ Санкт-Петербургский государственный университет.html" output
