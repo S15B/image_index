@@ -8,7 +8,6 @@ import re
 
 
 def decode_html_entities(text: str) -> str:
-    """Декодирует HTML"""
     if not text:
         return text
     
@@ -32,7 +31,6 @@ def decode_html_entities(text: str) -> str:
 
 
 def normalize_image_url(src: str) -> str:
-    """Нормализует URL для дедупликации."""
     if not src:
         return ""
     src = src.strip("'\"").lower()
@@ -43,7 +41,6 @@ def normalize_image_url(src: str) -> str:
 
 
 def is_image_url(url: str) -> bool:
-    """Проверяет является ли строка ссылкой на картинку."""
     if not url:
         return False
     
@@ -61,15 +58,10 @@ def is_image_url(url: str) -> bool:
 
 
 def is_icon(src: str) -> bool:
-    """
-    Проверяет, является ли картинка иконкой
-    """
     if not src:
         return False
     
     src_lower = src.lower()
-    
-    # Типичные имена иконок
     icon_patterns = [
         "favicon",
         "apple-touch-icon",
@@ -86,7 +78,6 @@ def is_icon(src: str) -> bool:
     
     # Типичные размеры иконок в имени файла
     if re.search(r'\d+x\d+', src_lower):
-        # Маленькие размеры - скорее всего иконка
         match = re.search(r'(\d+)x(\d+)', src_lower)
         if match:
             w, h = int(match.group(1)), int(match.group(2))
@@ -102,7 +93,6 @@ def is_icon(src: str) -> bool:
 
 
 def read_html_file(file_path: str) -> str:
-    """Читает HTML с автоопределением кодировки."""
     for encoding in ["utf-8", "cp1251", "cp1252", "latin-1"]:
         try:
             with open(file_path, "r", encoding=encoding) as f:
@@ -134,11 +124,8 @@ IMAGE_ATTRS = [
     "data-background", 
 ]
 
-# Атрибуты из которых берём описание картинки
 ALT_ATTRS = ["alt", "aria-label", "title"]
-# Теги в которых не картинка
 SPECIAL_HREF_TAGS = {"link", "meta", "a"}
-
 
 class HtmlParser:
     """
@@ -153,7 +140,6 @@ class HtmlParser:
         self.found_images = set()
     
     def parse(self):
-        """Основной метод парсинга."""
         current_text = ""
         
         while self.pos < self.length:
@@ -175,7 +161,6 @@ class HtmlParser:
         return self.elements
     
     def _add_image(self, src: str, alt: str, source_type: str):
-        """Добавляет картинку с проверкой на дубликаты и фильтром иконок."""
         if not src:
             return
     
