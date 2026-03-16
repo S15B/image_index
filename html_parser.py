@@ -8,7 +8,7 @@ import re
 
 
 def decode_html_entities(text: str) -> str:
-    """Декодирует HTML-сущности."""
+    """Декодирует HTML"""
     if not text:
         return text
     
@@ -62,8 +62,7 @@ def is_image_url(url: str) -> bool:
 
 def is_icon(src: str) -> bool:
     """
-    Проверяет, является ли картинка иконкой (favicon, apple-touch и т.п.)
-    Такие картинки обычно не нужны пользователю.
+    Проверяет, является ли картинка иконкой
     """
     if not src:
         return False
@@ -85,19 +84,17 @@ def is_icon(src: str) -> bool:
         if pattern in src_lower:
             return True
     
-    # Типичные размеры иконок в имени файла: 16x16, 32x32 и т.д.
+    # Типичные размеры иконок в имени файла
     if re.search(r'\d+x\d+', src_lower):
-        # Маленькие размеры — скорее всего иконка
+        # Маленькие размеры - скорее всего иконка
         match = re.search(r'(\d+)x(\d+)', src_lower)
         if match:
             w, h = int(match.group(1)), int(match.group(2))
             if w <= 192 and h <= 192:
-                # Но проверяем что это не обычная маленькая картинка
                 basename = os.path.basename(src_lower)
                 if "icon" in basename or "touch" in basename or "tile" in basename:
                     return True
     
-    # Расширение .ico — всегда иконка
     if src_lower.split("?")[0].endswith(".ico"):
         return True
     
@@ -122,33 +119,30 @@ def read_html_file(file_path: str) -> str:
 
 # Атрибуты которые могут содержать URL картинки
 IMAGE_ATTRS = [
-    "src",           # <img src>, <embed src>, <input src>
-    "srcset",        # <img srcset>, <source srcset>
-    "data",          # <object data>
-    "poster",        # <video poster>
-    "xlink:href",    # <svg image xlink:href>
-    "background",    # <body background> (устаревший HTML)
-    "data-src",      # lazy loading
-    "data-lazy",     # lazy loading
-    "data-original", # lazy loading
-    "data-image",    # lazy loading
-    "data-bg",       # lazy loading background
-    "data-poster",   # lazy loading poster
-    "data-background", # lazy loading background
+    "src",           
+    "srcset",        
+    "data",          
+    "poster",        
+    "xlink:href",    
+    "background",    
+    "data-src",     
+    "data-lazy",     
+    "data-original", 
+    "data-image",  
+    "data-bg",      
+    "data-poster",  
+    "data-background", 
 ]
 
 # Атрибуты из которых берём описание картинки
 ALT_ATTRS = ["alt", "aria-label", "title"]
-
-# Теги в которых href/content — НЕ картинка, а служебная ссылка
-# В этих тегах мы проверяем href/content отдельно с фильтром
+# Теги в которых не картинка
 SPECIAL_HREF_TAGS = {"link", "meta", "a"}
 
 
 class HtmlParser:
     """
-    Обобщённый HTML парсер.
-    Для каждого тега проверяем все атрибуты из IMAGE_ATTRS.
+    HTML парсер
     """
     
     def __init__(self, html: str):
@@ -184,12 +178,10 @@ class HtmlParser:
         """Добавляет картинку с проверкой на дубликаты и фильтром иконок."""
         if not src:
             return
-        
-        # Фильтруем иконки
+    
         if is_icon(src):
             return
         
-        # Проверяем дубликат
         unique_id = normalize_image_url(src)
         if not unique_id or unique_id in self.found_images:
             return
@@ -210,23 +202,19 @@ class HtmlParser:
         if self.pos >= self.length:
             return
         
-        # Комментарий
         if self.html[self.pos:self.pos + 3] == "!--":
             self._skip_comment()
             return
         
-        # DOCTYPE
         if self.html[self.pos] == "!":
             self._skip_until(">")
             return
-        
-        # Закрывающий тег
+
         is_closing = False
         if self.html[self.pos] == "/":
             is_closing = True
             self.pos += 1
         
-        # Имя тега
         tag_name = ""
         while self.pos < self.length and self.html[self.pos].isalnum():
             tag_name += self.html[self.pos]
@@ -236,7 +224,6 @@ class HtmlParser:
             self._skip_until(">")
             return
         
-        # Атрибуты
         attributes = ""
         while self.pos < self.length:
             char = self.html[self.pos]
@@ -251,9 +238,7 @@ class HtmlParser:
         if is_closing:
             return
         
-        # === УНИВЕРСАЛЬНАЯ ОБРАБОТКА ===
-        
-        # 1. Получаем описание (alt, aria-label, title)
+        # Получаем описание
         alt = ""
         for alt_attr in ALT_ATTRS:
             val = self._get_attribute(attributes, alt_attr)
@@ -261,43 +246,36 @@ class HtmlParser:
                 alt = decode_html_entities(val)
                 break
         
-        # 2. Проверяем IMAGE_ATTRS (общие для всех тегов)
+        # Проверяем IMAGE_ATTRS
         for attr in IMAGE_ATTRS:
             value = self._get_attribute(attributes, attr)
             if not value:
                 continue
             
-            # srcset — несколько URL, берём лучший
             if attr == "srcset":
                 self._parse_srcset(value, f"{tag_lower}_srcset")
                 continue
             
-            # Проверяем что это картинка
             if is_image_url(value):
                 self._add_image(value, alt, f"{tag_lower}_{attr}")
         
-        # 3. Отдельная обработка href и content
-        #    (в <link> и <meta> они часто НЕ картинки)
+        # Отдельная обработка href и content
         if tag_lower == "link":
-            # Пропускаем иконки: <link rel="icon" href="...">
+
             rel = self._get_attribute(attributes, "rel").lower()
             href = self._get_attribute(attributes, "href")
             
             if href and is_image_url(href):
-                # Пропускаем иконки
                 if "icon" in rel or "apple-touch" in rel:
-                    pass  # фильтр is_icon() тоже поймает, но лучше перестраховаться
-                # Пропускаем стили и шрифты
+                    pass  
                 elif "stylesheet" in rel or "font" in rel:
                     pass
-                # preload изображений — это нужная картинка
                 elif "preload" in rel:
                     as_attr = self._get_attribute(attributes, "as")
                     if as_attr.lower() == "image":
                         self._add_image(href, alt, "link_preload")
         
         elif tag_lower == "meta":
-            # og:image, twitter:image — это нужные картинки
             prop = self._get_attribute(attributes, "property").lower()
             name = self._get_attribute(attributes, "name").lower()
             content = self._get_attribute(attributes, "content")
@@ -307,14 +285,13 @@ class HtmlParser:
                     self._add_image(content, alt, "meta_image")
         
         elif tag_lower == "image":
-            # SVG <image href="..."> или <image xlink:href="...">
             href = self._get_attribute(attributes, "href")
             if not href:
                 href = self._get_attribute(attributes, "xlink:href")
             if href and is_image_url(href):
                 self._add_image(href, alt, "svg_image")
         
-        # 4. Проверяем style на url()
+        # Проверяем style на url()
         style = self._get_attribute(attributes, "style")
         if style and "url(" in style.lower():
             urls = self._extract_urls_from_css(style)
@@ -326,7 +303,7 @@ class HtmlParser:
                     s_type = f"{tag_lower}_role_img"
                 self._add_image(url, alt, s_type)
         
-        # 5. Пропускаем содержимое script и style
+        # Пропускаем содержимое script и style
         if tag_lower in ("script", "style"):
             self._skip_until_closing_tag(tag_name)
     
@@ -361,7 +338,7 @@ class HtmlParser:
             self._add_image(best[0], "", source_type)
     
     def _parse_style_blocks(self):
-        """Ищет url() внутри блоков <style>."""
+        """Ищет url() внутри блоков <style>"""
         pos = 0
         html_lower = self.html.lower()
         
@@ -386,7 +363,7 @@ class HtmlParser:
             pos = end + 8
     
     def _extract_urls_from_css(self, css: str) -> list:
-        """Извлекает все url() из CSS."""
+        """Извлекает все url"""
         urls = []
         pos = 0
         css_lower = css.lower()
@@ -561,7 +538,7 @@ def save_data_url(data_url: str, output_dir: str, counter: int) -> dict:
 
 
 def download_url(url: str, output_dir: str, counter: int) -> dict:
-    """Скачивает картинку по URL."""
+    """Скачивает картинку по URL"""
     try:
         original_name = url.split("?")[0].split("/")[-1]
         _, ext = os.path.splitext(original_name)
@@ -592,7 +569,6 @@ def download_url(url: str, output_dir: str, counter: int) -> dict:
 
 
 def copy_local_file(src: str, output_dir: str, counter: int, base_path: str) -> dict:
-    """Копирует локальный файл."""
     clean_src = src.split("?")[0]
     source_path = os.path.normpath(os.path.join(base_path, clean_src))
     
@@ -614,7 +590,6 @@ def copy_local_file(src: str, output_dir: str, counter: int, base_path: str) -> 
 
 
 def find_text_before(elements, index):
-    """Ищет текст ПЕРЕД элементом."""
     for i in range(index - 1, -1, -1):
         if elements[i]["type"] == "text":
             return elements[i]["content"]
@@ -622,7 +597,6 @@ def find_text_before(elements, index):
 
 
 def find_text_after(elements, index):
-    """Ищет текст ПОСЛЕ элемента."""
     for i in range(index + 1, len(elements)):
         if elements[i]["type"] == "text":
             return elements[i]["content"]
@@ -638,7 +612,6 @@ def save_results_to_json(results, output_dir):
 
 
 def parse_html_file(html_path, output_dir="output", base_url=""):
-    """Парсит HTML и извлекает картинки."""
     print(f"\n{'='*60}")
     print(f"  HTML ПАРСЕР")
     print(f"{'='*60}")
@@ -713,7 +686,6 @@ def parse_html_file(html_path, output_dir="output", base_url=""):
 
 
 def print_results(results):
-    """Выводит результаты."""
     print(f"\n{'='*60}")
     print(f"  РЕЗУЛЬТАТ: {len(results)} уникальных картинок")
     print(f"{'='*60}\n")
@@ -744,4 +716,4 @@ if __name__ == "__main__":
     print_results(results)
     
     if results:
-        print(f"📁 Картинки: {output_dir}/")
+        print(f" Картинки: {output_dir}/")
