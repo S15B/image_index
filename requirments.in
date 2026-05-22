@@ -7,3 +7,8 @@ transformers
 
 requests
 pytest
+
+deep_translator
+
+nltk
+numba
