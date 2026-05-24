@@ -15,7 +15,7 @@ from dedup import deduplicate
 
 app = Flask(__name__)
 
-DATA_DIR = os.path.join(BASE_DIR, '../image_index_2/data')
+DATA_DIR = os.path.join(BASE_DIR, 'data')
 INDEX_DIR = os.path.join(DATA_DIR, 'index')
 IMAGES_DIR = os.path.join(DATA_DIR, 'extracted_images')
 DOCUMENTS_PATH = os.path.join(DATA_DIR, 'unified_documents.json')
