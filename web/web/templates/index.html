@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Поиск – ImageSearch{% endblock %}
+{% block content %}
+<h1 class="mb-4">Поиск изображений по тексту</h1>
+<form method="post" action="/search">
+    <div class="mb-3">
+        <label for="query" class="form-label">Поисковый запрос</label>
+        <input type="text" class="form-control" id="query" name="query" required>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Область поиска</label>
+            <div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="field" id="field-all" value="full" checked>
+                    <label class="form-check-label" for="field-all">Везде</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="field" id="field-context" value="context">
+                    <label class="form-check-label" for="field-context">Контекст</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="field" id="field-desc" value="description">
+                    <label class="form-check-label" for="field-desc">Описание</label>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Сжатие индекса</label>
+            <div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="compression" id="comp-none" value="none" checked>
+                    <label class="form-check-label" for="comp-none">Без сжатия</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="compression" id="comp-gamma" value="gamma">
+                    <label class="form-check-label" for="comp-gamma">Гамма</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="compression" id="comp-delta" value="delta">
+                    <label class="form-check-label" for="comp-delta">Дельта</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Искать</button>
+</form>
+{% endblock %}

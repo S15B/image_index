@@ -7,9 +7,9 @@ import logging
 import timeit
 from typing import Dict, List, Literal
 
-from tokenizer import Tokenizer
-from indexer import InvertedIndex
-from query_processor import search
+from index.tokenizer import Tokenizer
+from index.indexer import InvertedIndex
+from index.query_processor import search
 
 logging.basicConfig(
     level=logging.INFO,

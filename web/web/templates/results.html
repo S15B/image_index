@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Результаты поиска – ImageSearch{% endblock %}
+{% block content %}
+<h1 class="mb-3">Результаты поиска</h1>
+<p class="lead">
+    Запрос: <strong>{{ query }}</strong> |
+    Область: <strong>{{ field }}</strong> |
+    Сжатие: <strong>{{ compression }}</strong>
+</p>
+<p>Найдено результатов: <strong>{{ results|length }}</strong> |
+   Время поиска: <strong>{{ "%.2f"|format(elapsed) }} мс</strong></p>
+
+{% if results %}
+<div class="row">
+    {% for doc in results %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <img src="{{ doc.image_url }}" class="card-img-top" alt="image"
+                 style="height: 200px; object-fit: cover;">
+            <div class="card-body">
+                <h6 class="card-title">ID: {{ doc.id }}</h6>
+                {% if doc.context %}
+                <p class="card-text"><small class="text-muted">Контекст:</small><br>
+                    {{ doc.context[:200] }}{% if doc.context|length > 200 %}...{% endif %}
+                </p>
+                {% endif %}
+                {% if doc.description_ru %}
+                <p class="card-text"><small class="text-muted">Описание:</small><br>
+                    {{ doc.description_ru[:200] }}{% if doc.description_ru|length > 200 %}...{% endif %}
+                </p>
+                {% endif %}
+                <a href="{{ doc.source_url }}" class="btn btn-sm btn-outline-primary" target="_blank">Источник</a>
+                <a href="#" class="btn btn-sm btn-outline-secondary disabled">Похожие (скоро)</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">Ничего не найдено. Попробуйте изменить запрос.</div>
+{% endif %}
+
+<a href="/" class="btn btn-secondary mt-3">Новый поиск</a>
+{% endblock %}

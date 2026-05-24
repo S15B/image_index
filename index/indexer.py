@@ -3,7 +3,7 @@ from typing import List, Dict, Optional, Literal
 
 import numpy as np
 
-from elias import gamma_encode_list, gamma_decode_list, delta_encode_list, delta_decode_list
+from index.elias import gamma_encode_list, gamma_decode_list, delta_encode_list, delta_decode_list
 
 
 class PostingsList(ABC):

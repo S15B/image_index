@@ -12,3 +12,5 @@ deep_translator
 
 nltk
 numba
+
+flask
