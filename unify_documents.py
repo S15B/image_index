@@ -25,13 +25,13 @@ logger.addHandler(file_handler)
 
 SRC_LANG = "en"
 TGT_LANG = "ru"
-SLEEP_BETWEEN_REQUESTS = 1.0
+SLEEP_BETWEEN_REQUESTS = 0.35
 MAX_RETRIES = 3
 RETRY_DELAY = 2.0
+SAVE_EVERY = 100
 
 
 def translate_with_retry(text: str) -> Optional[str]:
-    """Перевести текст с повторными попытками."""
     translator = GoogleTranslator(source=SRC_LANG, target=TGT_LANG)
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -47,21 +47,16 @@ def translate_with_retry(text: str) -> Optional[str]:
 
 
 def load_json(path: str) -> Any:
-    """Загрузить JSON-файл."""
-    logger.debug("Загрузка %s", path)
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_json(data: Any, path: str) -> None:
-    """Сохранить объект в JSON-файл."""
-    logger.info("Сохранение %s", path)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def build_context(record: Dict[str, str]) -> str:
-    """Собрать контекст из полей results.json (русский текст)."""
     parts = []
     for field in ("heading", "context", "alt", "text_before", "text_after", "block_text"):
         val = record.get(field, "").strip()
@@ -71,7 +66,6 @@ def build_context(record: Dict[str, str]) -> str:
 
 
 def normalize_image_path(absolute_path: str, base_dir: str) -> str:
-    """Преобразовать абсолютный путь в относительный вида 'extracted_images/page_X/image_Y.jpg'."""
     abs_path = os.path.normpath(absolute_path)
     base = os.path.normpath(base_dir)
     rel = os.path.relpath(abs_path, base)
@@ -103,6 +97,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Создаём нужные папки
+    os.makedirs("logs", exist_ok=True)
+    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+
+    # Загружаем кэш переводов
     translation_cache: Dict[str, str] = {}
     if os.path.exists(args.cache):
         translation_cache = load_json(args.cache)
@@ -110,6 +109,7 @@ def main() -> None:
     else:
         logger.info("Файл кэша переводов не найден, будет создан новый")
 
+    # Загружаем существующие документы
     existing_docs: List[Dict[str, Any]] = []
     existing_paths: Set[str] = set()
     max_id: int = 0
@@ -121,6 +121,7 @@ def main() -> None:
                 max_id = doc["id"]
         logger.info("Загружено %d существующих документов, max_id=%d", len(existing_docs), max_id)
 
+    # Загружаем описания от нейросети
     logger.info("Загрузка описаний из %s", args.descriptions)
     desc_data = load_json(args.descriptions)
 
@@ -131,9 +132,10 @@ def main() -> None:
     completed_list = desc_data["completed"]
     logger.info("Получено %d записей из completed", len(completed_list))
 
+    # Собираем описания по путям
     results_dir = args.results_dir
     descriptions_by_path: Dict[str, Dict[str, str]] = {}
-    for idx, (img_path, item) in enumerate(completed_list.items()):
+    for img_path, item in completed_list.items():
         img_path = img_path.replace("\\", "/")
         if item.get("is_logo", False):
             continue
@@ -151,6 +153,7 @@ def main() -> None:
         logger.error("Папка с результатами не найдена: %s", results_dir)
         sys.exit(1)
 
+    # Собираем контексты из results.json
     contexts_by_path: Dict[str, Dict[str, str]] = {}
     total_pages = 0
     total_images = 0
@@ -190,6 +193,7 @@ def main() -> None:
 
     logger.info("Обработано страниц: %d, изображений: %d", total_pages, total_images)
 
+    # Находим пересечение
     common_paths = set(descriptions_by_path.keys()) & set(contexts_by_path.keys())
     logger.info(
         "Пересечение (описание+контекст): %d из %d описаний и %d контекстов",
@@ -205,9 +209,11 @@ def main() -> None:
         logger.info("Нет новых записей, выходной файл актуален.")
         return
 
+    # Обрабатываем новые изображения
     new_documents: List[Dict[str, Any]] = []
     new_translations = 0
     cache_hits = 0
+    processed = 0
 
     for img_path in sorted(new_paths):
         en_text = descriptions_by_path[img_path]["description_en"]
@@ -226,22 +232,29 @@ def main() -> None:
                     continue
                 translation_cache[en_text] = ru_text
                 new_translations += 1
-
                 time.sleep(SLEEP_BETWEEN_REQUESTS)
 
         max_id += 1
-        new_documents.append(
-            {
-                "id": max_id,
-                "image_path": img_path,
-                "phash": descriptions_by_path[img_path]["phash"],
-                "source_url": contexts_by_path[img_path]["source_url"],
-                "context": contexts_by_path[img_path]["context"],
-                "description_en": en_text,
-                "description_ru": ru_text,
-            }
-        )
+        new_documents.append({
+            "id": max_id,
+            "image_path": img_path,
+            "phash": descriptions_by_path[img_path]["phash"],
+            "source_url": contexts_by_path[img_path]["source_url"],
+            "context": contexts_by_path[img_path]["context"],
+            "description_en": en_text,
+            "description_ru": ru_text,
+        })
+        
+        processed += 1
+        
+        # СОХРАНЯЕМ ПРОГРЕСС каждые SAVE_EVERY документов
+        if processed % SAVE_EVERY == 0:
+            all_docs = existing_docs + new_documents
+            save_json(all_docs, args.output)
+            save_json(translation_cache, args.cache)
+            logger.info(f"💾 Прогресс сохранён: {len(all_docs)} документов")
 
+    # Финальное сохранение
     all_documents = existing_docs + new_documents
     save_json(all_documents, args.output)
     save_json(translation_cache, args.cache)
