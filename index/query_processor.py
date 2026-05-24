@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List
-from index.indexer import InvertedIndex
-from index.tokenizer import Tokenizer
+from indexer import InvertedIndex
+from tokenizer import Tokenizer
 
 
 def tokenize_query(query: str, tokenizer: Tokenizer) -> List[str]:

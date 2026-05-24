@@ -7,9 +7,9 @@ import logging
 import timeit
 from typing import Dict, List, Literal
 
-from index.tokenizer import Tokenizer
-from index.indexer import InvertedIndex
-from index.query_processor import search
+from tokenizer import Tokenizer
+from indexer import InvertedIndex
+from query_processor import search
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,9 +73,11 @@ def compress_all(indexes: Dict[str, InvertedIndex]) -> Dict[str, Dict[str, Inver
     for field, idx in indexes.items():
         t0 = time.time()
         idx_gamma = idx.compress('gamma')
+        t1 = time.time()
         idx_delta = idx.compress('delta')
+        t2 = time.time()
         compressed[field] = {'gamma': idx_gamma, 'delta': idx_delta}
-        logger.info(f"  {field}: гамма-сжатие {time.time()-t0:.3f}с, дельта-сжатие выполнено.")
+        logger.info(f"  {field}: гамма-сжатие {t1 - t0:.3f}с, дельта-сжатие {t2 - t1:.3f}с.")
     return compressed
 
 

@@ -5,21 +5,21 @@ import pickle
 import numpy as np
 from flask import Flask, render_template, request, send_from_directory
 
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, BASE_DIR)
+sys.path.insert(0, os.path.join(BASE_DIR, 'index'))
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from query_processor import search
+from dedup import deduplicate
 
-from index.query_processor import search
-from index.dedup import deduplicate
 
 app = Flask(__name__)
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+DATA_DIR = os.path.join(BASE_DIR, '../image_index_2/data')
 INDEX_DIR = os.path.join(DATA_DIR, 'index')
 IMAGES_DIR = os.path.join(DATA_DIR, 'extracted_images')
 DOCUMENTS_PATH = os.path.join(DATA_DIR, 'unified_documents.json')
 
-sys.path.insert(0, os.path.join(BASE_DIR, 'index'))
 
 indices = {}
 
